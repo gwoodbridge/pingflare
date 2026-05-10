@@ -6,7 +6,7 @@
 [![D1 Database](https://img.shields.io/badge/Cloudflare-D1-F38020?logo=cloudflare&logoColor=white)](https://developers.cloudflare.com/d1/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-<video src="docs/sample.mp4" controls width="100%"></video>
+https://github.com/user-attachments/assets/c33e20fd-6a82-4e57-b95a-ec06bbf701f5
 
 Uptime monitoring and heartbeats that runs entirely on the Cloudflare free tier. No servers, no subscriptions. Built with Cloudflare Workers and D1!
 
