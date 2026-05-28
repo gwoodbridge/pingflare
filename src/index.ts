@@ -13,6 +13,7 @@ import backupRoutes from './routes/backup'
 import eventsRoutes from './routes/events'
 import { runCron } from './cron'
 import { requireAuth } from './middleware/auth'
+import { ensureSchema } from './db/migrate'
 
 export type Env = {
   DB: D1Database
@@ -24,6 +25,11 @@ export type Env = {
 }
 
 const app = new Hono<{ Bindings: Env }>()
+
+app.use('*', async (c, next) => {
+  await ensureSchema(c.env.DB)
+  await next()
+})
 
 app.use('/api/*', cors())
 
