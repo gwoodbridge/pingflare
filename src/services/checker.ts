@@ -184,6 +184,51 @@ export async function checkDns(monitor: Monitor): Promise<CheckResult> {
   }
 }
 
+function isUnreachable(err: unknown): boolean {
+  const s = String(err).toLowerCase()
+  return (
+    s.includes('econnrefused') || s.includes('connection refused') ||
+    s.includes('enotfound') || s.includes('enetunreach') || s.includes('ehostunreach') ||
+    s.includes('no such host') || s.includes('name or service not known')
+  )
+}
+
+export async function checkPing(monitor: Monitor): Promise<CheckResult> {
+  const start = Date.now()
+  const raw = monitor.url!
+  const target = /^https?:\/\//i.test(raw) ? raw : `http://${raw}`
+
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), (monitor.timeout || 30) * 1000)
+
+  try {
+    const response = await fetch(target, {
+      method: 'HEAD',
+      redirect: 'follow',
+      signal: controller.signal,
+    })
+    clearTimeout(timeoutId)
+    const responseTimeMs = Date.now() - start
+    return { status: 'up', responseTimeMs, message: `Ping OK · HTTP ${response.status}` }
+  } catch (err) {
+    clearTimeout(timeoutId)
+    const responseTimeMs = Date.now() - start
+    if (err instanceof Error && err.name === 'AbortError') {
+      return { status: 'down', responseTimeMs, message: `Timeout after ${monitor.timeout ?? 30}s` }
+    }
+    if (isUnreachable(err)) {
+      const msg = String(err)
+      return { status: 'down', responseTimeMs, message: msg, sslError: isSslError(msg) }
+    }
+    try {
+      const port = new URL(target).port || (target.startsWith('https') ? '443' : '80')
+      return { status: 'up', responseTimeMs, message: `Ping OK · :${port} open` }
+    } catch {
+      return { status: 'up', responseTimeMs, message: 'Ping OK · port open' }
+    }
+  }
+}
+
 function isSslError(message: string): boolean {
   const lower = message.toLowerCase()
   return lower.includes('ssl') || lower.includes('certificate') || lower.includes('tls') || lower.includes('cert') || lower.includes('handshake')

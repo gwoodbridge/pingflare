@@ -4,7 +4,7 @@ import { sql } from 'drizzle-orm'
 export const monitors = sqliteTable('monitors', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
-  type: text('type').notNull().$type<'http' | 'heartbeat' | 'dns'>(),
+  type: text('type').notNull().$type<'http' | 'heartbeat' | 'dns' | 'ping'>(),
   tags: text('tags').notNull().default('[]'),
   interval: integer('interval').notNull().default(60),
   active: integer('active', { mode: 'boolean' }).notNull().default(true),

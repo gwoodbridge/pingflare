@@ -109,7 +109,7 @@ export const api = {
 export interface Monitor {
   id: string
   name: string
-  type: 'http' | 'heartbeat' | 'dns'
+  type: 'http' | 'heartbeat' | 'dns' | 'ping'
   tags: string
   interval: number
   active: boolean

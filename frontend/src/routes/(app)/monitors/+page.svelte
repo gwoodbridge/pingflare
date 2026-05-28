@@ -13,7 +13,7 @@
   let loading = true
   let error = ''
   let filter = ''
-  let typeFilter: 'all' | 'http' | 'heartbeat' | 'dns' = 'all'
+  let typeFilter: 'all' | 'http' | 'heartbeat' | 'dns' | 'ping' = 'all'
   let statusFilter: 'all' | 'up' | 'down' | 'pending' = 'all'
   let ticker: ReturnType<typeof setInterval>
 
@@ -92,6 +92,7 @@
         <option value="http">{$t('monitors.http')}</option>
         <option value="heartbeat">{$t('monitors.heartbeat')}</option>
         <option value="dns">{$t('monitors.dns')}</option>
+        <option value="ping">{$t('monitors.ping')}</option>
       </select>
       <select class="input w-full sm:w-auto text-sm" bind:value={statusFilter}>
         <option value="all">{$t('monitors.allStatuses')}</option>

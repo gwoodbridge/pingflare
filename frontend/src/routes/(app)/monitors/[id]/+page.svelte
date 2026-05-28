@@ -184,6 +184,8 @@
               <p class="text-xs font-mono mt-1 truncate max-w-xs md:max-w-none" style="color: rgb(var(--text-muted))">{monitor.url}</p>
             {:else if monitor.type === 'dns' && monitor.dnsResolverUrl}
               <p class="text-xs font-mono mt-1 truncate max-w-xs md:max-w-none" style="color: rgb(var(--text-muted))">{monitor.dnsResolverUrl}</p>
+            {:else if monitor.type === 'ping' && monitor.url}
+              <p class="text-xs font-mono mt-1 truncate max-w-xs md:max-w-none" style="color: rgb(var(--text-muted))">{monitor.url}</p>
             {/if}
             {#if monitor.type === 'http'}
               <div class="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs" style="color: rgb(var(--text-muted))">
@@ -203,6 +205,12 @@
                 {#if monitor.dnsRecordType}<span>{$t('monitor.configDnsRecordType')}: {monitor.dnsRecordType}</span>{/if}
                 <span>{$t('monitor.configTimeout')}: {monitor.timeout}s</span>
                 {#if monitor.dnsExpectedIp}<span class="text-[var(--color-primary)]">{$t('monitor.configDnsExpected')}: {monitor.dnsExpectedIp}</span>{/if}
+              </div>
+            {/if}
+            {#if monitor.type === 'ping'}
+              <div class="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs" style="color: rgb(var(--text-muted))">
+                <span>{$t('monitor.configInterval')}: {monitor.interval}s</span>
+                <span>{$t('monitor.configTimeout')}: {monitor.timeout}s</span>
               </div>
             {/if}
             {#if tags.length > 0}
@@ -294,7 +302,7 @@
       </div>
     </div>
 
-    {#if monitor.type === 'http' || monitor.type === 'dns'}
+    {#if monitor.type === 'http' || monitor.type === 'dns' || monitor.type === 'ping'}
     <div class="card">
       <h2 class="text-sm font-semibold mb-4" style="color: rgb(var(--text))">{$t('monitor.responseTime')}</h2>
       <ResponseTimeChart {logs} height={80} />
@@ -376,7 +384,7 @@
             <tr style="border-bottom: 1px solid var(--border-color)">
               <th class="text-left pb-2 pr-3 font-medium w-14" style="color: rgb(var(--text-muted))">{$t('monitor.colStatus')}</th>
               <th class="text-left pb-2 pr-3 font-medium hidden sm:table-cell w-40" style="color: rgb(var(--text-muted))">{$t('monitor.colTime')}</th>
-              {#if monitor.type === 'http' || monitor.type === 'dns'}
+              {#if monitor.type === 'http' || monitor.type === 'dns' || monitor.type === 'ping'}
               <th class="text-left pb-2 pr-3 font-medium hidden sm:table-cell w-24" style="color: rgb(var(--text-muted))">{$t('monitor.colResponse')}</th>
               {/if}
               <th class="text-left pb-2 font-medium" style="color: rgb(var(--text-muted))">{$t('monitor.colMessage')}</th>
@@ -392,7 +400,7 @@
                   </span>
                 </td>
                 <td class="py-2.5 pr-3 hidden sm:table-cell tabular-nums" style="color: rgb(var(--text-muted))">{formatTs(log.checkedAt)}</td>
-                {#if monitor.type === 'http' || monitor.type === 'dns'}
+                {#if monitor.type === 'http' || monitor.type === 'dns' || monitor.type === 'ping'}
                 <td class="py-2.5 pr-3 hidden sm:table-cell" style="color: rgb(var(--text-muted))">
                   <span class="inline-flex items-center gap-1.5">
                     {#if log.countryCode}

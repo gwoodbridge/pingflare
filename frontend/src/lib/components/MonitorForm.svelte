@@ -9,7 +9,7 @@
 
   const dispatch = createEventDispatcher<{ saved: Monitor; cancel: void }>()
 
-  let tab: 'http' | 'heartbeat' | 'dns' = (monitor.type ?? 'http') as 'http' | 'heartbeat' | 'dns'
+  let tab: 'http' | 'heartbeat' | 'dns' | 'ping' = (monitor.type ?? 'http') as 'http' | 'heartbeat' | 'dns' | 'ping'
 
   let name            = monitor.name ?? ''
   let tagsInput       = (() => { try { return JSON.parse(monitor.tags ?? '[]').join(', ') } catch { return '' } })()
@@ -97,6 +97,10 @@
         dnsRecordType,
         dnsResolverUrl,
         dnsExpectedIp: dnsExpectedIp || null,
+      } : tab === 'ping' ? {
+        ...base,
+        url,
+        timeout: Number(timeout),
       } : {
         ...base,
         heartbeatInterval: Number(heartbeatInterval),
@@ -147,6 +151,12 @@
         {tab === 'dns' ? 'bg-primary text-white' : 'btn-outline'}"
       on:click={() => { tab = 'dns' }}
     >{$t('monitorForm.dns')}</button>
+    <button
+      type="button"
+      class="px-4 py-1.5 text-sm font-medium transition-colors
+        {tab === 'ping' ? 'bg-primary text-white' : 'btn-outline'}"
+      on:click={() => { tab = 'ping' }}
+    >{$t('monitorForm.ping')}</button>
   </div>
   {/if}
 
@@ -254,6 +264,20 @@
       <textarea id="m-body" class="input font-mono text-xs h-20 resize-none" bind:value={body} placeholder='&#123;"key": "value"&#125;'></textarea>
     </div>
     {/if}
+  </div>
+  {/if}
+
+  {#if tab === 'ping'}
+  <div class="space-y-4">
+    <h3 class="text-sm font-semibold text-[rgb(var(--text-muted))] uppercase tracking-wide">{$t('monitorForm.sectionPing')}</h3>
+    <div>
+      <label for="ping-url" class="label">{$t('monitorForm.pingUrl')}</label>
+      <input id="ping-url" class="input font-mono text-xs" bind:value={url} required placeholder="https://example.com" />
+    </div>
+    <div>
+      <label for="ping-timeout" class="label">{$t('monitorForm.timeout')}</label>
+      <input id="ping-timeout" class="input" type="number" bind:value={timeout} min="1" max="60" />
+    </div>
   </div>
   {/if}
 
