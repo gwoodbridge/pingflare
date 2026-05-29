@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import type { Monitor } from '../db/schema'
 import { msgTimeoutAfter } from '../notifications/messages'
+import { normalizeDoHUrl } from './doh-providers'
 
 export interface CheckResult {
   status: 'up' | 'down'
@@ -27,6 +28,7 @@ const DNS_RCODES: Record<number, string> = {
 interface WireResult { rcode: number; answers: string[] }
 
 function parseDnsWire(buf: ArrayBuffer): WireResult {
+  if (buf.byteLength < 12) throw new Error('DNS response too short to be valid')
   const v = new DataView(buf)
   const flags = v.getUint16(2)
   const rcode = flags & 0xf
@@ -97,7 +99,7 @@ function parseDnsWire(buf: ArrayBuffer): WireResult {
 
 export async function checkDns(monitor: Monitor): Promise<CheckResult> {
   const start = Date.now()
-  const resolverUrl = monitor.dnsResolverUrl!
+  const resolverUrl = normalizeDoHUrl(monitor.dnsResolverUrl!)
   const hostname = monitor.dnsHostname!
   const recordType = monitor.dnsRecordType ?? 'A'
 
@@ -151,9 +153,13 @@ export async function checkDns(monitor: Monitor): Promise<CheckResult> {
         rcode = data.Status
         answerData = (data.Answer ?? []).map(a => a.data)
       } catch {
-        const parsed = parseDnsWire(raw)
-        rcode = parsed.rcode
-        answerData = parsed.answers
+        try {
+          const parsed = parseDnsWire(raw)
+          rcode = parsed.rcode
+          answerData = parsed.answers
+        } catch {
+          return { status: 'down', responseTimeMs, message: 'DoH resolver returned unrecognized response format' }
+        }
       }
     }
 

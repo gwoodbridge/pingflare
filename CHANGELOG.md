@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.3.3] - 2026-05-28
+
+### Added
+- **DNS Providers**: Adds a public DNS list normalization for improved data processing
+
+## [1.3.2] - 2026-05-28
+
+### Fixed
+- **Migration**: Revert ensureScheme to fix auto migration database on Cloudflare Worker + D1
+
+## [1.3.1] - 2026-05-28
+
+### Fixed
+- **Migration**: Fixing auto migration database on Cloudflare Worker + D1
+
 ## [1.3.0] - 2026-05-28
 
 ### Added
