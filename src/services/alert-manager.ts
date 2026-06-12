@@ -120,16 +120,25 @@ export async function processAlert(ctx: AlertContext): Promise<void> {
   } else {
     const wasDown = prevStatus === 'down'
 
-    await db.update(alertState)
-      .set({
-        consecutiveFailures: 0,
-        consecutiveMissed: 0,
-        alertSentAt: null,
-        consecutiveAlerts: 0,
-        lastReminderAt: null,
-        surgePausedUntil: null,
-      })
-      .where(eq(alertState.monitorId, monitor.id))
+    const needsReset = state.consecutiveFailures !== 0
+      || state.consecutiveMissed !== 0
+      || state.alertSentAt !== null
+      || state.consecutiveAlerts !== 0
+      || state.lastReminderAt !== null
+      || state.surgePausedUntil !== null
+
+    if (needsReset) {
+      await db.update(alertState)
+        .set({
+          consecutiveFailures: 0,
+          consecutiveMissed: 0,
+          alertSentAt: null,
+          consecutiveAlerts: 0,
+          lastReminderAt: null,
+          surgePausedUntil: null,
+        })
+        .where(eq(alertState.monitorId, monitor.id))
+    }
 
     const orphanedIncident = !wasDown ? await getOpenIncident(db, monitor.id) : null
 
