@@ -1,5 +1,9 @@
 import { eq } from 'drizzle-orm'
 import type { Db } from '../db'
+
+let cachedLocale: string | null = null
+let cachedLocaleAt = 0
+const LOCALE_TTL_MS = 5 * 60 * 1000
 import { alertState, monitors, incidents, monitorNotifications, notificationChannels, settings } from '../db/schema'
 import type { Monitor, AlertState, NotificationChannel } from '../db/schema'
 import { sendNotification } from '../notifications'
@@ -203,6 +207,9 @@ async function closeIncident(db: Db, monitorId: string, now: number) {
 }
 
 export async function getLocale(db: Db): Promise<string> {
+  if (cachedLocale && Date.now() - cachedLocaleAt < LOCALE_TTL_MS) return cachedLocale
   const row = await db.query.settings.findFirst({ where: eq(settings.key, 'locale') })
-  return row?.value ?? 'en'
+  cachedLocale = row?.value ?? 'en'
+  cachedLocaleAt = Date.now()
+  return cachedLocale
 }
