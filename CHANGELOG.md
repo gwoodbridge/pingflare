@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.4.0] - 2026-05-29
+## [1.4.1] - 2026-05-29
 
 ### Added
 - **Ping monitor type**: New monitor type `ping` sends an HTTP HEAD request to any target and considers the host **up** on any response regardless of status code (200, 404, 500, etc.) — only connection failures, host-not-found, and timeouts mark the host as **down**
