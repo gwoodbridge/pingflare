@@ -304,6 +304,7 @@
   "statusPages.placeholderPwd": "Deixe em branco para acesso público",
   "statusPages.monitorsToDisplay": "Monitores a exibir",
   "statusPages.showAllMonitors": "Exibir todos os monitores (inclui monitores atuais e futuros)",
+  "statusPages.hideMonitorUrls": "Ocultar URLs dos monitores (mantém chaves de API e endpoints privados)",
   "statusPages.noMonitors": "Nenhum monitor configurado ainda.",
   "statusPages.creating": "Salvando…",
   "statusPages.createPage": "Criar página",

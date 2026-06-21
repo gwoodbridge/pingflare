@@ -198,6 +198,7 @@ export interface StatusPage {
   description: string | null
   passwordHash: string | null
   showAllMonitors: boolean
+  hideMonitorUrls: boolean
   createdAt: number
 }
 

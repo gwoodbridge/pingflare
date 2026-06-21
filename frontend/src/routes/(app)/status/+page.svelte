@@ -20,6 +20,7 @@
   let formPassword = ''
   let formMonitorIds: string[] = []
   let formShowAllMonitors = false
+  let formHideMonitorUrls = false
   let formEnablePassword = false
   let saving = false
   let formError = ''
@@ -34,7 +35,7 @@
   function openCreate() {
     editPage = null
     formName = ''; formSlug = ''; formDescription = ''; formPassword = ''
-    formMonitorIds = []; formShowAllMonitors = false; formEnablePassword = false; formError = ''
+    formMonitorIds = []; formShowAllMonitors = false; formHideMonitorUrls = false; formEnablePassword = false; formError = ''
     showCreate = true
   }
 
@@ -46,6 +47,7 @@
     formPassword = ''
     formError = ''
     formShowAllMonitors = page.showAllMonitors ?? false
+    formHideMonitorUrls = page.hideMonitorUrls ?? false
     formEnablePassword = !!page.passwordHash
     formMonitorIds = await api.statusPages.monitors(page.id)
     showCreate = false
@@ -71,6 +73,7 @@
         description: formDescription || null,
         password,
         showAllMonitors: formShowAllMonitors,
+        hideMonitorUrls: formHideMonitorUrls,
         monitorIds: formShowAllMonitors ? [] : formMonitorIds,
       }
       if (editPage) {
@@ -175,6 +178,11 @@
           <input type="checkbox" bind:checked={formShowAllMonitors} class="accent-primary" />
           <span style="color: rgb(var(--text))">{$t('statusPages.showAllMonitors')}</span>
         </label>
+        <label class="flex items-center gap-2 cursor-pointer text-sm p-2 rounded mb-2 hover:bg-[rgb(var(--bg-subtle))]"
+          style="border: 1px solid var(--border-color)">
+          <input type="checkbox" bind:checked={formHideMonitorUrls} class="accent-primary" />
+          <span style="color: rgb(var(--text))">{$t('statusPages.hideMonitorUrls')}</span>
+        </label>
         {#if !formShowAllMonitors}
           {#if allMonitors.length === 0}
             <p class="text-sm" style="color: rgb(var(--text-muted))">{$t('statusPages.noMonitors')}</p>
@@ -243,6 +251,11 @@
           style="border: 1px solid var(--border-color)">
           <input type="checkbox" bind:checked={formShowAllMonitors} class="accent-primary" />
           <span style="color: rgb(var(--text))">{$t('statusPages.showAllMonitors')}</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer text-sm p-2 rounded mb-2 hover:bg-[rgb(var(--bg-subtle))]"
+          style="border: 1px solid var(--border-color)">
+          <input type="checkbox" bind:checked={formHideMonitorUrls} class="accent-primary" />
+          <span style="color: rgb(var(--text))">{$t('statusPages.hideMonitorUrls')}</span>
         </label>
         {#if !formShowAllMonitors}
           {#if allMonitors.length === 0}

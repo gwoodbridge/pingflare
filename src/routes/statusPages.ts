@@ -29,6 +29,7 @@ router.post('/', async (c) => {
     description: body.description ?? null,
     passwordHash,
     showAllMonitors: body.showAllMonitors ?? false,
+    hideMonitorUrls: body.hideMonitorUrls ?? false,
   })
 
   if (Array.isArray(body.monitorIds)) {
@@ -68,6 +69,7 @@ router.put('/:id', async (c) => {
     description: body.description !== undefined ? body.description : existing.description,
     passwordHash,
     showAllMonitors: body.showAllMonitors !== undefined ? body.showAllMonitors : existing.showAllMonitors,
+    hideMonitorUrls: body.hideMonitorUrls !== undefined ? body.hideMonitorUrls : existing.hideMonitorUrls,
   }).where(eq(statusPages.id, id))
 
   if (Array.isArray(body.monitorIds)) {

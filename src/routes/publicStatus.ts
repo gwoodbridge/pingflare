@@ -293,7 +293,7 @@ router.get('/:slug/monitors/:monitorId', async (c) => {
   return c.json({
     name: monitor.name,
     type: monitor.type,
-    url: monitor.url,
+    url: page.hideMonitorUrls ? null : monitor.url,
     tags: monitor.tags,
     lastStatus: monitor.lastStatus,
     lastCheckedAt: monitor.lastCheckedAt,

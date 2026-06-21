@@ -137,10 +137,10 @@
 
   <header style="background-color: rgb(var(--bg-subtle)); border-bottom: 1px solid var(--border-color)">
     <div class="max-w-5xl mx-auto flex items-center h-14 px-4 gap-3">
-      <a href="/" aria-label="Pingflare" class="shrink-0 mr-1">
-        <img src="/logo.png" alt="Pingflare" class="h-6 object-contain" />
+      <a href="/" aria-label="StayPut" class="shrink-0 mr-1">
+        <img src="/logo.png" alt="StayPut" class="h-6 object-contain" />
       </a>
-      <span class="text-sm font-medium truncate flex-1" style="color: rgb(var(--text))">Pingflare</span>
+      <span class="text-sm font-medium truncate flex-1" style="color: rgb(var(--text))">StayPut</span>
       <div class="flex items-center gap-1 shrink-0">
         {#if data}
           <span class="text-xs tabular-nums px-1.5" style="color: rgb(var(--text-muted))">{countdown}s</span>

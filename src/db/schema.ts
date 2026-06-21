@@ -108,6 +108,7 @@ export const statusPages = sqliteTable('status_pages', {
   description: text('description'),
   passwordHash: text('password_hash'),
   showAllMonitors: integer('show_all_monitors', { mode: 'boolean' }).notNull().default(false),
+  hideMonitorUrls: integer('hide_monitor_urls', { mode: 'boolean' }).notNull().default(false),
   createdAt: integer('created_at').notNull().default(sql`(unixepoch())`),
 })
 

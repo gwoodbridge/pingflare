@@ -20,7 +20,7 @@
     type: 'http' | 'heartbeat'
     url: string | null
     tags: string
-    lastStatus: 'up' | 'down' | 'pending'
+    lastStatus: 'up' | 'down' | 'degraded' | 'pending'
     lastCheckedAt: number | null
     uptime1: number | null
     uptime7: number | null
@@ -106,12 +106,12 @@
 
   <header style="background-color: rgb(var(--bg-subtle)); border-bottom: 1px solid var(--border-color)">
     <div class="max-w-5xl mx-auto flex items-center h-14 px-4 gap-3">
-      <a href="/" aria-label="Pingflare" class="shrink-0 mr-1">
-        <img src="/logo.png" alt="Pingflare" class="h-6 object-contain" />
+      <a href="/" aria-label="StayPut" class="shrink-0 mr-1">
+        <img src="/logo.png" alt="StayPut" class="h-6 object-contain" />
       </a>
       <div class="flex items-center gap-1.5 text-sm flex-1 min-w-0">
         <a href="/s/{slug}" class="shrink-0 font-medium transition-colors hover:text-[var(--color-primary)]"
-          style="color: rgb(var(--text-muted))">Pingflare</a>
+          style="color: rgb(var(--text-muted))">StayPut</a>
         <span style="color: rgb(var(--text-muted))">/</span>
         <span class="font-medium truncate" style="color: rgb(var(--text))">{data?.name ?? '…'}</span>
       </div>
