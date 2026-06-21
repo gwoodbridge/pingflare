@@ -14,7 +14,7 @@
   let error = ''
   let filter = ''
   let typeFilter: 'all' | 'http' | 'heartbeat' | 'dns' | 'ping' = 'all'
-  let statusFilter: 'all' | 'up' | 'down' | 'pending' = 'all'
+  let statusFilter: 'all' | 'up' | 'down' | 'degraded' | 'pending' = 'all'
   let ticker: ReturnType<typeof setInterval>
 
   async function load() {
@@ -98,6 +98,7 @@
         <option value="all">{$t('monitors.allStatuses')}</option>
         <option value="up">{$t('monitors.up')}</option>
         <option value="down">{$t('monitors.down')}</option>
+        <option value="degraded">{$t('monitors.degraded')}</option>
         <option value="pending">{$t('monitors.pending')}</option>
       </select>
     </div>

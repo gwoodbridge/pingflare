@@ -60,6 +60,7 @@ router.post('/', async (c) => {
     dnsRecordType: body.dnsRecordType ?? 'A',
     dnsResolverUrl: body.dnsResolverUrl ?? null,
     dnsExpectedIp: body.dnsExpectedIp ?? null,
+    contentCheck: body.contentCheck ? JSON.stringify(body.contentCheck) : null,
     createdAt: now,
     updatedAt: now,
   })
@@ -121,6 +122,9 @@ router.put('/:id', async (c) => {
     dnsRecordType: body.dnsRecordType ?? existing.dnsRecordType,
     dnsResolverUrl: body.dnsResolverUrl ?? existing.dnsResolverUrl,
     dnsExpectedIp: body.dnsExpectedIp ?? existing.dnsExpectedIp,
+    contentCheck: body.contentCheck !== undefined
+      ? (body.contentCheck ? JSON.stringify(body.contentCheck) : null)
+      : existing.contentCheck,
     updatedAt: now,
   }).where(eq(monitors.id, id))
 

@@ -51,13 +51,15 @@
   onMount(() => { load(); ticker = setInterval(load, 10_000) })
   onDestroy(() => clearInterval(ticker))
 
-  $: total   = $monitors.length
-  $: up      = $monitors.filter(m => m.lastStatus === 'up').length
-  $: down    = $monitors.filter(m => m.lastStatus === 'down').length
-  $: pending = $monitors.filter(m => m.lastStatus === 'pending').length
-  $: allUp   = total > 0 && down === 0 && pending === 0
+  $: total    = $monitors.length
+  $: up       = $monitors.filter(m => m.lastStatus === 'up').length
+  $: down     = $monitors.filter(m => m.lastStatus === 'down').length
+  $: degraded = $monitors.filter(m => m.lastStatus === 'degraded').length
+  $: pending  = $monitors.filter(m => m.lastStatus === 'pending').length
+  $: allUp    = total > 0 && down === 0 && degraded === 0 && pending === 0
 
-  $: downLabel    = `${nMonitors($locale, down)} ${$t('dashboard.down').toLowerCase()}`
+  $: downLabel     = `${nMonitors($locale, down)} ${$t('dashboard.down').toLowerCase()}`
+  $: degradedLabel = `${nMonitors($locale, degraded)} ${$t('dashboard.degraded').toLowerCase()}`
   $: pendingLabel = (() => {
     const key = pending === 1 ? 'dashboard.pendingLabelOne' : 'dashboard.pendingLabelMany'
     return $t(key, { n: nMonitors($locale, pending), action: $t('dashboard.runChecks') })
@@ -85,6 +87,12 @@
               style="background: rgb(239 68 68 / .1); color: #ef4444; border: 1px solid rgb(239 68 68 / .2)">
               <span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse inline-block"></span>
               {downLabel}
+            </span>
+          {:else if degraded > 0}
+            <span class="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded mb-2"
+              style="background: rgb(245 158 11 / .12); color: #f59e0b; border: 1px solid rgb(245 158 11 / .2)">
+              <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse inline-block"></span>
+              {degradedLabel}
             </span>
           {/if}
           <h1 class="text-2xl md:text-3xl font-semibold tracking-tight" style="color: rgb(var(--text))">{$t('dashboard.heading')}</h1>

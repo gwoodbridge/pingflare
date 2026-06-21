@@ -138,11 +138,13 @@
     font-weight: 500;
     letter-spacing: 0.01em;
   }
-  .badge-up      { background: rgb(34 197 94 / .1);   color: #16a34a; }
-  .badge-down    { background: rgb(239 68 68 / .1);   color: #dc2626; }
-  .badge-pending { background: rgb(255 102 51 / .1);  color: var(--color-primary); }
-  .dark .badge-up   { background: rgb(34 197 94 / .12);  color: #4ade80; }
-  .dark .badge-down { background: rgb(239 68 68 / .12);  color: #f87171; }
+  .badge-up       { background: rgb(34 197 94 / .1);   color: #16a34a; }
+  .badge-down     { background: rgb(239 68 68 / .1);   color: #dc2626; }
+  .badge-degraded { background: rgb(245 158 11 / .12); color: #b45309; }
+  .badge-pending  { background: rgb(255 102 51 / .1);  color: var(--color-primary); }
+  .dark .badge-up       { background: rgb(34 197 94 / .12);  color: #4ade80; }
+  .dark .badge-down     { background: rgb(239 68 68 / .12);  color: #f87171; }
+  .dark .badge-degraded { background: rgb(245 158 11 / .15); color: #fbbf24; }
 
   /* ── Top nav links ── */
   .nav-link {

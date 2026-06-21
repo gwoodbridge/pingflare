@@ -36,6 +36,7 @@ const base: Monitor = {
   dnsRecordType: 'A',
   dnsResolverUrl: 'https://freedns.controld.com/p0',
   dnsExpectedIp: null,
+  contentCheck: null,
   createdAt: 0,
   updatedAt: 0,
 }

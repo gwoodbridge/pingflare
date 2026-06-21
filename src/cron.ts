@@ -73,7 +73,7 @@ export async function runCron(env: Env): Promise<void> {
           if (monitor.type === 'http') {
             const result = await checkHttp(monitor, locale)
             const sslStatus = monitor.sslCheckEnabled && monitor.url?.startsWith('https://')
-              ? (result.sslError ? 'error' : (result.status === 'up' ? 'ok' : monitor.sslStatus))
+              ? (result.sslError ? 'error' : (result.status !== 'down' ? 'ok' : monitor.sslStatus))
               : undefined
             return {
               monitor,
@@ -89,7 +89,7 @@ export async function runCron(env: Env): Promise<void> {
                 originIp: origin?.originIp ?? null,
               },
               sslStatus,
-              alertInput: { status: result.status, message: result.message, responseTimeMs: result.responseTimeMs },
+              alertInput: { status: result.status === 'down' ? 'down' : 'up', message: result.message, responseTimeMs: result.responseTimeMs },
             }
           } else if (monitor.type === 'dns') {
             const result = await checkDns(monitor)
@@ -106,7 +106,7 @@ export async function runCron(env: Env): Promise<void> {
                 countryCode: origin?.countryCode ?? null,
                 originIp: origin?.originIp ?? null,
               },
-              alertInput: { status: result.status, message: result.message, responseTimeMs: result.responseTimeMs },
+              alertInput: { status: result.status === 'down' ? 'down' : 'up', message: result.message, responseTimeMs: result.responseTimeMs },
             }
           } else if (monitor.type === 'ping') {
             const result = await checkPing(monitor)
@@ -123,7 +123,7 @@ export async function runCron(env: Env): Promise<void> {
                 countryCode: origin?.countryCode ?? null,
                 originIp: origin?.originIp ?? null,
               },
-              alertInput: { status: result.status, message: result.message, responseTimeMs: result.responseTimeMs },
+              alertInput: { status: result.status === 'down' ? 'down' : 'up', message: result.message, responseTimeMs: result.responseTimeMs },
             }
           } else {
             const hb = await db.query.heartbeatTokens.findFirst({
@@ -179,7 +179,7 @@ export async function runCron(env: Env): Promise<void> {
   for (let i = 0; i < checkResults.length; i += CONCURRENCY) {
     await Promise.allSettled(
       checkResults.slice(i, i + CONCURRENCY).map(r => {
-        const updateSet: Record<string, unknown> = { lastCheckedAt: now, lastStatus: r.alertInput.status }
+        const updateSet: Record<string, unknown> = { lastCheckedAt: now, lastStatus: r.logEntry.status }
         if (r.sslStatus !== undefined) updateSet.sslStatus = r.sslStatus
         return db.update(monitors).set(updateSet).where(eq(monitors.id, r.monitor.id))
       })

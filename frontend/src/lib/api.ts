@@ -106,6 +106,16 @@ export const api = {
   },
 }
 
+export type MonitorStatus = 'up' | 'down' | 'degraded' | 'pending'
+
+export interface ContentCheck {
+  mode: 'json' | 'keyword'
+  path?: string
+  up?: string[]
+  degraded?: string[]
+  down?: string[]
+}
+
 export interface Monitor {
   id: string
   name: string
@@ -114,7 +124,7 @@ export interface Monitor {
   interval: number
   active: boolean
   lastCheckedAt: number | null
-  lastStatus: 'up' | 'down' | 'pending'
+  lastStatus: MonitorStatus
   reminderIntervalHours: number | null
   toleranceFailures: number
   url: string | null
@@ -140,6 +150,7 @@ export interface Monitor {
   dnsRecordType: string | null
   dnsResolverUrl: string | null
   dnsExpectedIp: string | null
+  contentCheck: string | null
   createdAt: number
   updatedAt: number
 }
@@ -147,7 +158,7 @@ export interface Monitor {
 export interface StatusLog {
   id: string
   monitorId: string
-  status: 'up' | 'down' | 'pending'
+  status: MonitorStatus
   message: string | null
   responseTimeMs: number | null
   checkedAt: number
@@ -213,7 +224,7 @@ export interface IncidentUpdate {
 export interface PublicMonitorStatus {
   id: string
   name: string
-  status: 'up' | 'down' | 'pending'
+  status: MonitorStatus
   uptime90d: number | null
   daily: DailyUptime[]
 }
@@ -230,15 +241,17 @@ export interface PublicIncident {
 
 export interface PublicStatusPage {
   page: { name: string; description: string | null; protected: boolean }
+  overall: 'operational' | 'degraded' | 'down' | 'unknown'
   monitors: PublicMonitorStatus[]
   incidents: PublicIncident[]
 }
 
 /** Payload for creating/updating a monitor (headers as object, tags as array) */
-export type MonitorPayload = Omit<Partial<Monitor>, 'headers' | 'tags'> & {
+export type MonitorPayload = Omit<Partial<Monitor>, 'headers' | 'tags' | 'contentCheck'> & {
   headers?: Record<string, string>
   tags?: string[]
   channelIds?: string[]
+  contentCheck?: ContentCheck | null
 }
 
 /** Payload for creating/updating a notification channel (config as object) */

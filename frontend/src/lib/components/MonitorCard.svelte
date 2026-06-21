@@ -7,11 +7,14 @@
   export let uptime: number | null = null
 
   $: isDown = monitor.lastStatus === 'down'
+  $: isDegraded = monitor.lastStatus === 'degraded'
   $: isPending = monitor.lastStatus === 'pending'
   $: isUp = monitor.lastStatus === 'up'
 
   $: accentColor = isDown
     ? '#ef4444'
+    : isDegraded
+    ? '#f59e0b'
     : isPending
     ? 'var(--color-primary)'
     : '#22c55e'
@@ -40,7 +43,7 @@
 
   <div class="flex items-center shrink-0 pl-2">
     <span class="block w-2 h-2 rounded-full transition-all"
-      style="background-color: {accentColor}; {isDown ? 'animation: pulse 1.5s ease-in-out infinite' : ''}"></span>
+      style="background-color: {accentColor}; {(isDown || isDegraded) ? 'animation: pulse 1.5s ease-in-out infinite' : ''}"></span>
   </div>
 
   <div class="min-w-0 flex-1">
@@ -68,7 +71,7 @@
   <div class="shrink-0 flex items-center gap-6 text-xs" style="color: rgb(var(--text-muted))">
     {#if uptime !== null}
       <div class="text-right hidden sm:block">
-        <div class="font-semibold tabular-nums" style="color: {isUp ? '#22c55e' : isDown ? '#ef4444' : 'var(--color-primary)'}">
+        <div class="font-semibold tabular-nums" style="color: {accentColor}">
           {formatUptime(uptime)}
         </div>
         <div class="mt-0.5 text-[11px]">{$t('monitorCard.uptime')}</div>

@@ -2,14 +2,18 @@ import { createHash } from 'node:crypto'
 import type { Monitor } from '../db/schema'
 import { msgTimeoutAfter } from '../notifications/messages'
 import { normalizeDoHUrl } from './doh-providers'
+import { parseContentCheck, evaluateContent } from './content-eval'
 
 export interface CheckResult {
-  status: 'up' | 'down'
+  status: 'up' | 'down' | 'degraded'
   statusCode?: number
   responseTimeMs: number
   message: string
   sslError?: boolean
 }
+
+/** Cap how much of a response body we read for content evaluation. */
+const MAX_CONTENT_CHARS = 512 * 1024
 
 interface DoHResponse {
   Status: number
@@ -292,6 +296,17 @@ export async function checkHttp(monitor: Monitor, locale = 'en'): Promise<CheckR
 
     const expectedStatus = monitor.expectedStatus || 200
     if (response.status === expectedStatus) {
+      const contentCheck = parseContentCheck(monitor.contentCheck)
+      if (contentCheck) {
+        let body = ''
+        try {
+          body = (await response.text()).slice(0, MAX_CONTENT_CHARS)
+        } catch {
+          return { status: 'down', statusCode: response.status, responseTimeMs, message: `HTTP ${response.status} · could not read body` }
+        }
+        const ev = evaluateContent(contentCheck, body)
+        return { status: ev.status, statusCode: response.status, responseTimeMs, message: `HTTP ${response.status} · ${ev.detail}` }
+      }
       return { status: 'up', statusCode: response.status, responseTimeMs, message: `HTTP ${response.status}` }
     }
     return { status: 'down', statusCode: response.status, responseTimeMs, message: `HTTP ${response.status} (expected ${expectedStatus})` }

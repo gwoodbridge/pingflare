@@ -40,6 +40,25 @@
   let dnsResolverUrl      = monitor.dnsResolverUrl ?? ''
   let dnsExpectedIp       = monitor.dnsExpectedIp ?? ''
 
+  // Content check (HTTP): derive up/degraded/down from the response body.
+  let contentCheckEnabled = !!monitor.contentCheck
+  let contentMode: 'json' | 'keyword' = 'json'
+  let contentPath = ''
+  let contentDown = ''
+  let contentDegraded = ''
+  let contentUp = ''
+  ;(() => {
+    if (!monitor.contentCheck) return
+    try {
+      const cc = JSON.parse(monitor.contentCheck)
+      contentMode = cc.mode === 'keyword' ? 'keyword' : 'json'
+      contentPath = cc.path ?? ''
+      contentDown = (cc.down ?? []).join(', ')
+      contentDegraded = (cc.degraded ?? []).join(', ')
+      contentUp = (cc.up ?? []).join(', ')
+    } catch { /* ignore malformed config */ }
+  })()
+
   let selectedChannelIds: string[] = []
   let allChannels: NotificationChannel[] = []
 
@@ -78,6 +97,7 @@
         toleranceFailures: Number(toleranceFailures),
         channelIds: selectedChannelIds,
       }
+      const splitList = (s: string) => s.split(/[\n,]/).map(x => x.trim()).filter(Boolean)
       const payload: MonitorPayload = tab === 'http' ? {
         ...base,
         url, method, body: body || null,
@@ -90,6 +110,13 @@
         authToken:    authType === 'bearer' ? authToken : null,
         sslCheckEnabled,
         cacheBooster,
+        contentCheck: contentCheckEnabled ? {
+          mode: contentMode,
+          ...(contentMode === 'json' ? { path: contentPath.trim() } : {}),
+          up: splitList(contentUp),
+          degraded: splitList(contentDegraded),
+          down: splitList(contentDown),
+        } : null,
       } : tab === 'dns' ? {
         ...base,
         timeout: Number(timeout),
@@ -256,6 +283,48 @@
     <div>
       <label for="m-headers" class="label">{$t('monitorForm.headers')}</label>
       <textarea id="m-headers" class="input font-mono text-xs h-20 resize-none" bind:value={headersInput} placeholder="X-API-Key: mykey&#10;Accept: application/json"></textarea>
+    </div>
+
+    <div class="rounded border p-3 space-y-3" style="border-color: var(--border-color)">
+      <div class="flex items-center gap-2">
+        <input type="checkbox" id="content-check" bind:checked={contentCheckEnabled} class="accent-primary" />
+        <label for="content-check" class="text-sm font-medium">{$t('monitorForm.contentCheck')}</label>
+      </div>
+      {#if contentCheckEnabled}
+        <p class="text-xs" style="color: rgb(var(--text-muted))">{$t('monitorForm.contentCheckHint')}</p>
+        <div class="flex gap-4">
+          <label class="flex items-center gap-2 text-sm">
+            <input type="radio" bind:group={contentMode} value="json" class="accent-primary" />
+            {$t('monitorForm.contentModeJson')}
+          </label>
+          <label class="flex items-center gap-2 text-sm">
+            <input type="radio" bind:group={contentMode} value="keyword" class="accent-primary" />
+            {$t('monitorForm.contentModeKeyword')}
+          </label>
+        </div>
+        {#if contentMode === 'json'}
+          <div>
+            <label for="content-path" class="label">{$t('monitorForm.contentPath')}</label>
+            <input id="content-path" class="input font-mono text-xs" bind:value={contentPath} placeholder="status.indicator" />
+            <p class="mt-1 text-xs" style="color: rgb(var(--text-muted))">{$t('monitorForm.contentPathHint')}</p>
+          </div>
+        {/if}
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label for="content-down" class="label">{$t('monitorForm.contentDown')}</label>
+            <input id="content-down" class="input text-xs" bind:value={contentDown} placeholder={contentMode === 'json' ? 'major, critical' : 'outage, down'} />
+          </div>
+          <div>
+            <label for="content-degraded" class="label">{$t('monitorForm.contentDegraded')}</label>
+            <input id="content-degraded" class="input text-xs" bind:value={contentDegraded} placeholder={contentMode === 'json' ? 'minor, maintenance' : 'degraded, partial'} />
+          </div>
+          <div>
+            <label for="content-up" class="label">{$t('monitorForm.contentUp')}</label>
+            <input id="content-up" class="input text-xs" bind:value={contentUp} placeholder={contentMode === 'json' ? 'none' : 'resolved, restored'} />
+          </div>
+        </div>
+        <p class="text-xs" style="color: rgb(var(--text-muted))">{$t('monitorForm.contentListHint')}</p>
+      {/if}
     </div>
 
     {#if ['POST', 'PUT', 'PATCH'].includes(method)}

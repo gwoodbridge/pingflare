@@ -9,7 +9,7 @@ export const monitors = sqliteTable('monitors', {
   interval: integer('interval').notNull().default(60),
   active: integer('active', { mode: 'boolean' }).notNull().default(true),
   lastCheckedAt: integer('last_checked_at'),
-  lastStatus: text('last_status').notNull().default('pending').$type<'up' | 'down' | 'pending'>(),
+  lastStatus: text('last_status').notNull().default('pending').$type<'up' | 'down' | 'degraded' | 'pending'>(),
   reminderIntervalHours: integer('reminder_interval_hours'),
   toleranceFailures: integer('tolerance_failures').notNull().default(1),
   url: text('url'),
@@ -35,6 +35,7 @@ export const monitors = sqliteTable('monitors', {
   dnsRecordType: text('dns_record_type').default('A'),
   dnsResolverUrl: text('dns_resolver_url'),
   dnsExpectedIp: text('dns_expected_ip'),
+  contentCheck: text('content_check'),
   createdAt: integer('created_at').notNull().default(sql`(unixepoch())`),
   updatedAt: integer('updated_at').notNull().default(sql`(unixepoch())`),
 }, (t) => [
@@ -44,7 +45,7 @@ export const monitors = sqliteTable('monitors', {
 export const statusLogs = sqliteTable('status_logs', {
   id: text('id').primaryKey(),
   monitorId: text('monitor_id').notNull().references(() => monitors.id, { onDelete: 'cascade' }),
-  status: text('status').notNull().$type<'up' | 'down' | 'pending'>(),
+  status: text('status').notNull().$type<'up' | 'down' | 'degraded' | 'pending'>(),
   message: text('message'),
   responseTimeMs: integer('response_time_ms'),
   checkedAt: integer('checked_at').notNull(),

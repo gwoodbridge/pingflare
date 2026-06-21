@@ -70,12 +70,8 @@
     }
   }
 
-  $: overallStatus = (() => {
-    if (!data || data.monitors.length === 0) return 'unknown'
-    if (data.monitors.some(m => m.status === 'down')) return 'outage'
-    if (data.monitors.some(m => m.status === 'pending')) return 'degraded'
-    return 'operational'
-  })()
+  // Trust the server's worst-of rollup; map its "down" to the template's "outage".
+  $: overallStatus = !data ? 'unknown' : data.overall === 'down' ? 'outage' : data.overall
 
   $: faviconColor = overallStatus === 'operational' ? '#22c55e' : overallStatus === 'outage' ? '#ef4444' : overallStatus === 'degraded' ? '#f97316' : '#9ca3af'
   $: faviconHref = `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="${faviconColor}"/></svg>`)}`
@@ -100,14 +96,14 @@
   }
 
   $: statusLabel = (s: string): string =>
-    ({ up: $t('pub.statusOperational'), down: $t('pub.statusOutage'), pending: $t('pub.statusPending') } as Record<string,string>)[s] ?? s
+    ({ up: $t('pub.statusOperational'), down: $t('pub.statusOutage'), degraded: $t('pub.degraded'), pending: $t('pub.statusPending') } as Record<string,string>)[s] ?? s
 
   function statusDotCls(s: string): string {
-    return ({ up: 'bg-green-500', down: 'bg-red-500', pending: 'bg-orange-400' } as Record<string,string>)[s] ?? 'bg-[rgb(var(--text-muted))]'
+    return ({ up: 'bg-green-500', down: 'bg-red-500', degraded: 'bg-amber-500', pending: 'bg-orange-400' } as Record<string,string>)[s] ?? 'bg-[rgb(var(--text-muted))]'
   }
 
   function statusAccentColor(s: string): string {
-    return ({ up: '#22c55e', down: '#ef4444', pending: 'var(--color-primary)' } as Record<string,string>)[s] ?? '#22c55e'
+    return ({ up: '#22c55e', down: '#ef4444', degraded: '#f59e0b', pending: 'var(--color-primary)' } as Record<string,string>)[s] ?? '#22c55e'
   }
 
   function incidentBadgeCls(s: IncidentStatus): string {
@@ -298,7 +294,7 @@
                   style="background-color: {statusAccentColor(m.status)}; opacity: {m.status === 'up' ? '0.5' : '1'}"></div>
                 <div class="flex items-center gap-3 mb-2">
                   <span class="w-2.5 h-2.5 rounded-full shrink-0 {statusDotCls(m.status)}
-                    {m.status === 'down' ? 'animate-pulse' : ''}"></span>
+                    {m.status === 'down' || m.status === 'degraded' ? 'animate-pulse' : ''}"></span>
                   <span class="font-medium text-sm flex-1" style="color: rgb(var(--text))">{m.name}</span>
                   <span class="text-xs font-medium tabular-nums" style="color: {uptimeColor(m.uptime90d)}">
                     {m.uptime90d !== null ? `${m.uptime90d.toFixed(2)}% ${$t('pub.uptime')}` : statusLabel(m.status)}

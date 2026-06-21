@@ -6,6 +6,74 @@ import type { Env } from '../index'
 
 const router = new Hono<{ Bindings: Env }>()
 
+export type Overall = 'operational' | 'degraded' | 'down' | 'unknown'
+
+/** Worst-of rollup across a page's monitor statuses. */
+export function rollup(statuses: string[]): Overall {
+  if (statuses.length === 0) return 'unknown'
+  if (statuses.includes('down')) return 'down'
+  if (statuses.includes('degraded')) return 'degraded'
+  if (statuses.every(s => s === 'pending')) return 'unknown'
+  return 'operational'
+}
+
+const OVERALL_COLOR: Record<Overall, string> = {
+  operational: '#22c55e',
+  degraded: '#f59e0b',
+  down: '#ef4444',
+  unknown: '#9ca3af',
+}
+const OVERALL_LABEL: Record<Overall, string> = {
+  operational: 'All systems operational',
+  degraded: 'Degraded performance',
+  down: 'Major outage',
+  unknown: 'Status unknown',
+}
+
+/** Resolve the active monitor rows shown on a status page, in display order. */
+async function selectPageMonitors(
+  db: ReturnType<typeof getDb>,
+  page: typeof statusPages.$inferSelect,
+): Promise<typeof monitors.$inferSelect[]> {
+  if (page.showAllMonitors) {
+    const rows = await db.select().from(monitors).where(eq(monitors.active, true))
+    return rows.sort((a, b) => a.name.localeCompare(b.name))
+  }
+  const pm = await db.select().from(statusPageMonitors).where(eq(statusPageMonitors.pageId, page.id))
+  pm.sort((a, b) => a.sortOrder - b.sortOrder)
+  const ids = pm.map(r => r.monitorId)
+  if (ids.length === 0) return []
+  const rows = await db.select().from(monitors).where(inArray(monitors.id, ids))
+  return ids.map(id => rows.find(r => r.id === id)).filter((m): m is typeof monitors.$inferSelect => !!m)
+}
+
+function escapeXml(s: string): string {
+  return s.replace(/[<>&'"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' }[c]!))
+}
+
+/** Shields-style two-segment SVG badge. */
+function badgeSvg(overall: Overall): string {
+  const label = 'status'
+  const value = OVERALL_LABEL[overall]
+  const color = OVERALL_COLOR[overall]
+  const charW = 6.5
+  const lw = Math.round(label.length * charW) + 10
+  const vw = Math.round(value.length * charW) + 12
+  const w = lw + vw
+  const lt = escapeXml(label)
+  const vt = escapeXml(value)
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="20" role="img" aria-label="${lt}: ${vt}">
+  <linearGradient id="s" x2="0" y2="100%"><stop offset="0" stop-color="#bbb" stop-opacity=".1"/><stop offset="1" stop-opacity=".1"/></linearGradient>
+  <rect rx="3" width="${w}" height="20" fill="#555"/>
+  <rect rx="3" x="${lw}" width="${vw}" height="20" fill="${color}"/>
+  <rect rx="3" width="${w}" height="20" fill="url(#s)"/>
+  <g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="11">
+    <text x="${lw / 2}" y="14">${lt}</text>
+    <text x="${lw + vw / 2}" y="14">${vt}</text>
+  </g>
+</svg>`
+}
+
 async function getDailyStats(
   db: ReturnType<typeof getDb>,
   monitorIds: string[],
@@ -54,6 +122,7 @@ router.get('/:slug', async (c) => {
     if (monitorIds.length === 0) {
       return c.json({
         page: { name: page.name, description: page.description, protected: !!page.passwordHash },
+        overall: 'unknown' as Overall,
         monitors: [],
         incidents: [],
       })
@@ -131,6 +200,7 @@ router.get('/:slug', async (c) => {
   c.header('Cache-Control', 'public, max-age=30, stale-while-revalidate=60')
   return c.json({
     page: { name: page.name, description: page.description, protected: !!page.passwordHash },
+    overall: rollup(monitorData.map(m => m.status)),
     monitors: monitorData,
     incidents: incidentData,
   })
@@ -245,6 +315,52 @@ router.get('/:slug/monitors/:monitorId', async (c) => {
       durationSeconds: i.durationSeconds,
     })),
   })
+})
+
+// Embeddable SVG badge (e.g. <img src=".../badge.svg">). Non-protected pages only.
+router.get('/:slug/badge.svg', async (c) => {
+  const db = getDb(c.env.DB)
+  const page = await db.query.statusPages.findFirst({ where: eq(statusPages.slug, c.req.param('slug')) })
+
+  let overall: Overall = 'unknown'
+  if (page && !page.passwordHash) {
+    const mons = await selectPageMonitors(db, page)
+    overall = rollup(mons.map(m => m.lastStatus))
+  }
+
+  c.header('Content-Type', 'image/svg+xml; charset=utf-8')
+  c.header('Cache-Control', 'public, max-age=30, stale-while-revalidate=60')
+  return c.body(badgeSvg(overall))
+})
+
+// Footer embed: <script src=".../embed.js"></script> injects a live status pill.
+router.get('/:slug/embed.js', (c) => {
+  const slug = c.req.param('slug')
+  const origin = new URL(c.req.url).origin
+  const api = JSON.stringify(`${origin}/api/public/status/${encodeURIComponent(slug)}`)
+  const pageUrl = JSON.stringify(`${origin}/s/${encodeURIComponent(slug)}`)
+
+  const js = `(function(){
+  var API=${api},PAGE=${pageUrl};
+  var COLORS={operational:"#22c55e",degraded:"#f59e0b",down:"#ef4444",unknown:"#9ca3af"};
+  var LABELS={operational:"All systems operational",degraded:"Degraded performance",down:"Major outage",unknown:"Status unknown"};
+  var me=document.currentScript;
+  var badge=document.createElement("a");
+  badge.href=PAGE;badge.target="_blank";badge.rel="noopener";
+  badge.style.cssText="display:inline-flex;align-items:center;gap:6px;font:13px/1.4 -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;text-decoration:none;color:inherit";
+  var dot=document.createElement("span");
+  dot.style.cssText="width:8px;height:8px;border-radius:50%;background:#9ca3af;flex:0 0 auto";
+  var text=document.createElement("span");text.textContent="Loading status\\u2026";
+  badge.appendChild(dot);badge.appendChild(text);
+  if(me&&me.parentNode){me.parentNode.insertBefore(badge,me.nextSibling);}else{document.body.appendChild(badge);}
+  function paint(o){var k=COLORS[o]?o:"unknown";dot.style.background=COLORS[k];text.textContent=LABELS[k];}
+  function load(){fetch(API,{cache:"no-store"}).then(function(r){return r.json();}).then(function(d){paint(d&&d.overall);}).catch(function(){paint("unknown");});}
+  load();setInterval(load,60000);
+})();`
+
+  c.header('Content-Type', 'application/javascript; charset=utf-8')
+  c.header('Cache-Control', 'public, max-age=300')
+  return c.body(js)
 })
 
 export default router

@@ -36,6 +36,7 @@ const base: Monitor = {
   dnsRecordType: null,
   dnsResolverUrl: null,
   dnsExpectedIp: null,
+  contentCheck: null,
   createdAt: 0,
   updatedAt: 0,
 }
