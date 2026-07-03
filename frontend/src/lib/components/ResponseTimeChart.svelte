@@ -99,7 +99,7 @@
     <div class="mt-2 text-xs min-h-[1.25rem]">
       {#if hovered}
         <div class="flex items-center gap-2" style="color: rgb(var(--text-muted))">
-          <span class="font-mono font-bold w-10 shrink-0 tabular-nums
+          <span class="font-mono font-bold w-20 shrink-0 tabular-nums
             {hovered.status === 'up' ? 'text-green-500' : hovered.status === 'down' ? 'text-red-400' : ''}"
             style="{hovered.status !== 'up' && hovered.status !== 'down' ? 'color: var(--color-primary)' : ''}">
             {hovered.status.toUpperCase()}

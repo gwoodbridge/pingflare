@@ -298,7 +298,7 @@
           <div class="text-xs max-h-72 overflow-auto -mx-1.5">
             {#each data.logs.slice(0, 50) as log}
               <div class="flex items-center gap-2 px-1.5 py-2 hover:bg-[rgb(var(--bg-muted))] transition-colors">
-                <span class="font-mono font-bold w-10 shrink-0 tabular-nums
+                <span class="font-mono font-bold w-20 shrink-0 tabular-nums
                   {log.status === 'up' ? 'text-green-500' : log.status === 'down' ? 'text-red-400' : 'text-primary'}">
                   {log.status.toUpperCase()}
                 </span>
