@@ -112,6 +112,7 @@ export async function processAlert(ctx: AlertContext): Promise<void> {
 
   } else {
     const wasDown = prevStatus === 'down'
+    const alertWasSent = state.alertSentAt !== null
 
     const needsReset = state.consecutiveFailures !== 0
       || state.consecutiveMissed !== 0
@@ -135,7 +136,7 @@ export async function processAlert(ctx: AlertContext): Promise<void> {
 
     const orphanedIncident = !wasDown ? await getOpenIncident(db, monitor.id) : null
 
-    if (wasDown || orphanedIncident) {
+    if ((wasDown && alertWasSent) || orphanedIncident) {
       await closeIncident(db, monitor.id, now)
       const payload: NotificationPayload = {
         type: 'recovery',
