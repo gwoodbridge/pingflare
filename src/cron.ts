@@ -1,5 +1,6 @@
 import { eq, lt } from 'drizzle-orm'
-import { getDb, monitors, statusLogs, heartbeatTokens, settings } from './db'
+import { getDb, monitors, statusLogs, statusDaily, heartbeatTokens, settings } from './db'
+import { utcDay } from './services/daily-stats'
 import { checkHttp, checkDns, checkPing } from './services/checker'
 import { checkHeartbeat } from './services/heartbeat-checker'
 import { processAlert, getLocale } from './services/alert-manager'
@@ -57,6 +58,7 @@ export async function runCron(env: Env): Promise<void> {
     const retentionDays = retentionRow ? parseInt(retentionRow.value, 10) : 90
     const cutoff = now - retentionDays * 86400
     await db.delete(statusLogs).where(lt(statusLogs.checkedAt, cutoff))
+    await db.delete(statusDaily).where(lt(statusDaily.day, utcDay(cutoff)))
     lastRetentionCleanupAt = Date.now()
   }
 

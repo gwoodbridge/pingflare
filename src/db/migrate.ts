@@ -144,6 +144,15 @@ CREATE TABLE IF NOT EXISTS incident_updates (
   FOREIGN KEY (incident_id) REFERENCES incident_reports(id) ON UPDATE no action ON DELETE cascade
 );
 
+CREATE TABLE IF NOT EXISTS status_daily (
+  monitor_id text NOT NULL,
+  day text NOT NULL,
+  ups integer NOT NULL,
+  total integer NOT NULL,
+  PRIMARY KEY(monitor_id, day),
+  FOREIGN KEY (monitor_id) REFERENCES monitors(id) ON UPDATE no action ON DELETE cascade
+);
+
 CREATE TABLE IF NOT EXISTS incident_monitors (
   incident_id text NOT NULL,
   monitor_id text NOT NULL,
@@ -177,7 +186,20 @@ export async function ensureSchema(d1: D1Database): Promise<void> {
     `ALTER TABLE monitors ADD COLUMN content_check text`,
     `ALTER TABLE status_pages ADD COLUMN hide_monitor_urls integer DEFAULT false NOT NULL`,
   ]
+  // One query for the columns that already exist, so a cold isolate doesn't
+  // make a failing D1 round trip for every ALTER. If the query isn't allowed,
+  // fall back to trying each ALTER.
+  let existing: Set<string> | null = null
+  try {
+    const { results } = await d1.prepare(
+      `SELECT m.name AS tbl, p.name AS col FROM sqlite_master m, pragma_table_info(m.name) p WHERE m.type = 'table'`,
+    ).all<{ tbl: string; col: string }>()
+    existing = new Set(results.map(r => `${r.tbl}.${r.col}`))
+  } catch { /* fall back below */ }
+
   for (const sql of alterStatements) {
+    const m = sql.match(/^ALTER TABLE (\w+) ADD COLUMN (\w+)/)
+    if (existing && m && existing.has(`${m[1]}.${m[2]}`)) continue
     try { await d1.prepare(sql).run() } catch { /* column already exists */ }
   }
 

@@ -57,6 +57,18 @@ export const statusLogs = sqliteTable('status_logs', {
   index('idx_sl_checked_at').on(t.checkedAt),
 ])
 
+// Per-monitor, per-UTC-day check counts for finished days. Filled lazily by
+// services/daily-stats.ts so public status pages don't re-aggregate 90 days of
+// raw status_logs on every request.
+export const statusDaily = sqliteTable('status_daily', {
+  monitorId: text('monitor_id').notNull().references(() => monitors.id, { onDelete: 'cascade' }),
+  day: text('day').notNull(),
+  ups: integer('ups').notNull(),
+  total: integer('total').notNull(),
+}, (t) => [
+  primaryKey({ columns: [t.monitorId, t.day] }),
+])
+
 export const incidents = sqliteTable('incidents', {
   id: text('id').primaryKey(),
   monitorId: text('monitor_id').notNull().references(() => monitors.id, { onDelete: 'cascade' }),
@@ -142,6 +154,7 @@ export const incidentMonitors = sqliteTable('incident_monitors', {
 export type Monitor = typeof monitors.$inferSelect
 export type NewMonitor = typeof monitors.$inferInsert
 export type StatusLog = typeof statusLogs.$inferSelect
+export type StatusDaily = typeof statusDaily.$inferSelect
 export type Incident = typeof incidents.$inferSelect
 export type NotificationChannel = typeof notificationChannels.$inferSelect
 export type AlertState = typeof alertState.$inferSelect
