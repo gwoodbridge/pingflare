@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { eq, desc, and, gte, inArray, sql } from 'drizzle-orm'
 import { getDb, statusPages, statusPageMonitors, monitors, statusLogs, incidents, incidentReports, incidentUpdates, incidentMonitors } from '../db'
 import { verifyPassword } from '../utils'
+import { getDailyStats } from '../services/daily-stats'
 import type { Env } from '../index'
 
 const router = new Hono<{ Bindings: Env }>()
@@ -74,25 +75,25 @@ function badgeSvg(overall: Overall): string {
 </svg>`
 }
 
-async function getDailyStats(
-  db: ReturnType<typeof getDb>,
-  monitorIds: string[],
-  since90d: number,
-) {
-  if (monitorIds.length === 0) return []
-  const dayExpr = sql<string>`strftime('%Y-%m-%d', datetime(${statusLogs.checkedAt}, 'unixepoch'))`
-  return db.select({
-    monitorId: statusLogs.monitorId,
-    day: dayExpr.as('day'),
-    ups: sql<number>`SUM(CASE WHEN ${statusLogs.status} = 'up' THEN 1 ELSE 0 END)`.as('ups'),
-    total: sql<number>`COUNT(*)`.as('total'),
-  })
-    .from(statusLogs)
-    .where(and(inArray(statusLogs.monitorId, monitorIds), gte(statusLogs.checkedAt, since90d)))
-    .groupBy(statusLogs.monitorId, dayExpr)
+/** Seconds a computed public status response is kept in the colo's edge cache. */
+export const PUBLIC_STATUS_CACHE_SECONDS = 30
+
+/** caches.default exists on Workers but not in the Node server or tests. */
+function edgeCache(): Cache | null {
+  return typeof caches !== 'undefined' && 'default' in caches ? (caches as unknown as { default: Cache }).default : null
 }
 
 router.get('/:slug', async (c) => {
+  // Serve unprotected pages from the colo's cache. Only responses for pages
+  // without a password are ever stored (see the end of this handler), and a
+  // request carrying ?password= skips the cache.
+  const cache = edgeCache()
+  const cacheKey = cache && !c.req.query('password') ? new Request(c.req.url, { method: 'GET' }) : null
+  if (cache && cacheKey) {
+    const hit = await cache.match(cacheKey)
+    if (hit) return hit
+  }
+
   const db = getDb(c.env.DB)
   const slug = c.req.param('slug')
 
@@ -140,9 +141,8 @@ router.get('/:slug', async (c) => {
   }
 
   const now = Math.floor(Date.now() / 1000)
-  const since90d = now - 90 * 86400
 
-  const dailyRows = await getDailyStats(db, monitorIds, since90d)
+  const dailyRows = await getDailyStats(db, monitorIds, now)
 
   const daysByMonitor: Record<string, Record<string, { ups: number; total: number }>> = {}
   const uptimeByMonitor: Record<string, { ups: number; total: number }> = {}
@@ -197,13 +197,18 @@ router.get('/:slug', async (c) => {
     }
   }
 
-  c.header('Cache-Control', 'public, max-age=30, stale-while-revalidate=60')
-  return c.json({
+  c.header('Cache-Control', `public, max-age=${PUBLIC_STATUS_CACHE_SECONDS}, stale-while-revalidate=60`)
+  const res = c.json({
     page: { name: page.name, description: page.description, protected: !!page.passwordHash },
     overall: rollup(monitorData.map(m => m.status)),
     monitors: monitorData,
     incidents: incidentData,
   })
+  if (cache && cacheKey && !page.passwordHash) {
+    const put = cache.put(cacheKey, res.clone()).catch(() => { /* caching is best effort */ })
+    try { c.executionCtx.waitUntil(put) } catch { await put }
+  }
+  return res
 })
 
 router.get('/:slug/monitors/:monitorId', async (c) => {
@@ -235,17 +240,7 @@ router.get('/:slug/monitors/:monitorId', async (c) => {
   if (!monitor) return c.json({ error: 'Not found' }, 404)
 
   const now = Math.floor(Date.now() / 1000)
-  const since90d = now - 90 * 86400
-  const dayExpr = sql<string>`strftime('%Y-%m-%d', datetime(${statusLogs.checkedAt}, 'unixepoch'))`
-
-  const dailyAgg = await db.select({
-    day: dayExpr.as('day'),
-    ups: sql<number>`SUM(CASE WHEN ${statusLogs.status} = 'up' THEN 1 ELSE 0 END)`.as('ups'),
-    total: sql<number>`COUNT(*)`.as('total'),
-  })
-    .from(statusLogs)
-    .where(and(eq(statusLogs.monitorId, monitorId), gte(statusLogs.checkedAt, since90d)))
-    .groupBy(dayExpr)
+  const dailyAgg = await getDailyStats(db, [monitorId], now)
 
   const dayMap: Record<string, { ups: number; total: number }> = {}
   let totalUps = 0, totalAll = 0
